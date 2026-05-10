@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traveloop • Personalized Travel Planning</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@700&display=swap');
+        :root { --tw-color-primary: #14b8a6; }
+        * { transition-property: color, background-color, border-color, text-decoration-color, fill, stroke; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 150ms; }
+        .logo-font { font-family: 'Playfair Display', sans-serif; }
+        .hero-bg { background: linear-gradient(90deg, rgba(20, 184, 166, 0.85), rgba(45, 212, 191, 0.85)), url('https://picsum.photos/id/1015/2000/1200') center/cover no-repeat; }
+        .nav-link { position: relative; }
+        .nav-link:after { content: ''; position: absolute; width: 0; height: 3px; bottom: -2px; left: 0; background-color: #14b8a6; }
+        .nav-link:hover:after { width: 100%; }
+        .card-hover { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card-hover:hover { transform: translateY(-6px) scale(1.03); box-shadow: 25px 25px 50px -12px rgb(20 184 166 / 0.25); }
+        .section { animation: fadeInUp 0.6s ease forwards; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .confetti { position: absolute; width: 10px; height: 10px; animation: confetti-fall 4s linear forwards; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans">
+
+    <!-- NAVBAR -->
+    <nav id="navbar" class="hidden bg-white border-b shadow-sm sticky top-0 z-50">
+        <div class="max-w-screen-2xl mx-auto px-8 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-x-3">
+                <div class="w-9 h-9 bg-teal-500 rounded-2xl flex items-center justify-center text-white text-3xl">🌍</div>
+                <h1 class="logo-font text-3xl tracking-tight text-teal-600">Traveloop</h1>
+            </div>
+            
+            <!-- SEARCH BAR -->
+            <div class="flex-1 max-w-md mx-8 bg-slate-100 hover:bg-slate-200 rounded-3xl px-5 py-3 flex items-center gap-x-3">
+                <i class="fa-solid fa-magnifying-glass text-teal-500"></i>
+                <input id="global-search" 
+                       onkeyup="if(event.keyCode===13) performSearch(); liveSearch()"
+                       type="text" 
+                       placeholder="Search cities, destinations or activities..." 
+                       class="flex-1 bg-transparent outline-none text-sm placeholder-slate-400">
+            </div>
+
+            <div class="flex items-center gap-x-8 text-sm font-medium">
+                <a onclick="navigateTo('dashboard')" class="nav-link py-4 flex items-center gap-x-2 text-teal-600 cursor-pointer"><i class="fa-solid fa-house"></i> Dashboard</a>
+                <a onclick="navigateTo('my-trips')" class="nav-link py-4 flex items-center gap-x-2 cursor-pointer"><i class="fa-solid fa-suitcase-rolling"></i> My Trips</a>
+                <a onclick="navigateTo('itinerary')" class="nav-link py-4 flex items-center gap-x-2 cursor-pointer"><i class="fa-solid fa-route"></i> Itinerary Builder</a>
+                <a onclick="navigateTo('budget')" class="nav-link py-4 flex items-center gap-x-2 cursor-pointer"><i class="fa-solid fa-chart-pie"></i> Budget</a>
+                <a onclick="navigateTo('packing')" class="nav-link py-4 flex items-center gap-x-2 cursor-pointer"><i class="fa-solid fa-list-check"></i> Packing</a>
+                <div class="flex-1"></div>
+                <button onclick="createNewTrip()" class="bg-teal-500 hover:bg-teal-600 text-white px-6 py-2 rounded-3xl flex items-center gap-x-2 font-semibold shadow-lg shadow-teal-500/30">
+                    <i class="fa-solid fa-plus"></i> PLAN NEW TRIP
+                </button>
+            </div>
+            <div class="flex items-center gap-x-6">
+                <div onclick="showProfile()" class="flex items-center gap-x-2 cursor-pointer">
+                    <div class="text-right">
+                        <p id="user-name-display" class="font-semibold text-sm">Alex Rivera</p>
+                        <p class="text-teal-500 text-xs">Pro Traveler</p>
+                    </div>
+                    <img src="https://picsum.photos/id/64/128/128" alt="User" class="w-9 h-9 rounded-2xl object-cover ring-2 ring-teal-300">
+                </div>
+                <button onclick="logout()" class="px-5 py-2 text-sm font-medium text-slate-700 hover:text-slate-900 flex items-center gap-x-2">
+                    <i class="fa-solid fa-right-from-bracket"></i><span>Logout</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- LOGIN / SIGNUP SCREEN -->
+    <div id="login-screen" class="min-h-screen hero-bg flex items-center justify-center p-6">
+        <div class="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl max-w-lg w-full p-10">
+            <div class="flex justify-center mb-6">
+                <div class="flex items-center gap-x-3">
+                    <div class="w-12 h-12 bg-teal-500 rounded-3xl flex items-center justify-center text-white text-4xl">🌍</div>
+                    <h1 class="logo-font text-5xl text-teal-600 tracking-tighter">Traveloop</h1>
+                </div>
+            </div>
+            <h2 class="text-center text-3xl font-semibold mb-2">Welcome back, adventurer!</h2>
+            <p class="text-center text-slate-500 mb-8">Your next unforgettable journey starts here.</p>
+            <div class="space-y-6">
+                <div class="flex bg-slate-100 rounded-3xl p-1 text-sm font-medium">
+                    <button onclick="switchAuthTab(0)" id="tab-login" class="flex-1 py-3 rounded-3xl data-[active=true]:bg-white data-[active=true]:shadow">Log in</button>
+                    <button onclick="switchAuthTab(1)" id="tab-signup" class="flex-1 py-3 rounded-3xl data-[active=true]:bg-white data-[active=true]:shadow">Sign up</button>
+                </div>
+                <div id="login-form">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Email address</label>
+                            <input id="login-email" type="email" value="demo@traveloop.com" class="w-full px-4 py-4 rounded-3xl border border-slate-200 focus:border-teal-300 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Password</label>
+                            <input id="login-password" type="password" value="demo123" class="w-full px-4 py-4 rounded-3xl border border-slate-200 focus:border-teal-300 outline-none">
+                        </div>
+                        <button onclick="performLogin()" class="w-full py-4 bg-teal-500 hover:bg-teal-600 text-white font-semibold text-lg rounded-3xl shadow-lg shadow-teal-500/40">Log in to Traveloop</button>
+                    </div>
+                </div>
+                <div id="signup-form" class="hidden">
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><label class="block text-sm font-medium mb-1">First name</label><input type="text" value="Alex" class="w-full px-4 py-4 rounded-3xl border border-slate-200 focus:border-teal-300 outline-none"></div>
+                            <div><label class="block text-sm font-medium mb-1">Last name</label><input type="text" value="Rivera" class="w-full px-4 py-4 rounded-3xl border border-slate-200 focus:border-teal-300 outline-none"></div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Email address</label>
+                            <input id="signup-email" type="email" value="demo@traveloop.com" class="w-full px-4 py-4 rounded-3xl border border-slate-200 focus:border-teal-300 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Password</label>
+                            <input id="signup-password" type="password" value="demo123" class="w-full px-4 py-4 rounded-3xl border border-slate-200 focus:border-teal-300 outline-none">
+                        </div>
+                        <button onclick="performSignup()" class="w-full py-4 bg-teal-500 hover:bg-teal-600 text-white font-semibold text-lg rounded-3xl shadow-lg shadow-teal-500/40">Create my free account</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP -->
+    <div id="main-app" class="hidden min-h-screen">
+
+        <!-- DASHBOARD -->
+        <div id="screen-dashboard" class="section max-w-screen-2xl mx-auto px-8 pt-8">
+            <div class="flex justify-between items-end mb-8">
+                <div>
+                    <h1 id="welcome-header" class="text-5xl font-semibold logo-font">Good morning, Alex! 👋</h1>
+                    <p class="text-xl text-slate-600 mt-1">Where are we exploring next?</p>
+                </div>
+            </div>
+            <div class="mb-12">
+                <div class="flex items-baseline justify-between mb-4">
+                    <h2 class="text-2xl font-semibold">Most famous places to visit right now</h2>
+                </div>
+                <div id="popular-grid" class="grid grid-cols-6 gap-4"></div>
+            </div>
+            <div class="grid grid-cols-12 gap-6">
+                <div class="col-span-12">
+                    <h2 class="text-2xl font-semibold mb-4">Your upcoming adventures</h2>
+                    <div id="upcoming-trips" class="grid grid-cols-3 gap-6"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MY TRIPS -->
+        <div id="screen-my-trips" class="section hidden max-w-screen-2xl mx-auto px-8 pt-8">
+            <h1 class="text-4xl font-semibold mb-6">My Trips</h1>
+            <div id="my-trips-list" class="grid grid-cols-4 gap-6"></div>
+        </div>
+
+        <!-- ITINERARY BUILDER -->
+        <div id="screen-itinerary" class="section hidden max-w-screen-2xl mx-auto px-8 pt-8">
+            <div class="flex justify-between mb-6">
+                <div>
+                    <h1 id="current-trip-name" class="text-4xl font-semibold">Italy Grand Tour • 14 days</h1>
+                    <p id="current-trip-dates" class="text-slate-500">May 22 – June 4, 2026 • 4 travelers</p>
+                </div>
+                <div class="flex items-center gap-x-4">
+                    <button onclick="saveItinerary()" class="px-8 py-3 bg-teal-500 text-white rounded-3xl">Save &amp; Share</button>
+                </div>
+            </div>
+            <div id="itinerary-timeline" class="space-y-8"></div>
+            <div onclick="addStopToItinerary()" class="mt-8 flex items-center justify-center border-2 border-dashed border-teal-300 rounded-3xl py-8 text-teal-600 hover:bg-teal-50 cursor-pointer">
+                <i class="fa-solid fa-plus mr-3"></i> Add another city or stop
+            </div>
+        </div>
+
+        <!-- BUDGET SECTION (UPDATED) -->
+        <div id="screen-budget" class="section hidden max-w-screen-2xl mx-auto px-8 pt-8">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-4xl font-semibold">Trip Budget Breakdown</h1>
+                
+                <!-- Trip Selector Dropdown -->
+                <div class="flex items-center gap-x-3">
+                    <label class="font-medium text-slate-600">Select Trip:</label>
+                    <select id="budget-trip-select" onchange="loadBudgetData()" 
+                            class="px-6 py-3 bg-white border border-slate-200 rounded-3xl text-sm font-medium focus:outline-none focus:border-teal-400">
+                    </select>
+                </div>
+            </div>
+
+            <p id="budget-trip-title" class="text-teal-600 text-2xl mb-8">Bali Bliss Escape • Total: <span id="budget-total" class="font-semibold">₹52,000</span></p>
+            
+            <div class="grid grid-cols-12 gap-8">
+                <!-- Pie Chart -->
+                <div class="col-span-7 bg-white rounded-3xl p-8">
+                    <h3 class="font-semibold mb-6">Cost Distribution</h3>
+                    <canvas id="budgetChart" class="max-h-96"></canvas>
+                </div>
+                
+                <!-- Breakdown Bars -->
+                <div id="budget-breakdown" class="col-span-5 space-y-6"></div>
+            </div>
+        </div>
+
+        <!-- PACKING CHECKLIST -->
+        <div id="screen-packing" class="section hidden max-w-screen-2xl mx-auto px-8 pt-8">
+            <h1 class="text-4xl font-semibold mb-6">Packing Checklist • Italy Grand Tour</h1>
+            <div class="bg-white rounded-3xl p-8 max-w-2xl">
+                <div id="packing-list" class="space-y-4"></div>
+                <button onclick="resetChecklist()" class="mt-8 text-sm flex items-center text-slate-400 hover:text-teal-500">
+                    <i class="fa-solid fa-rotate-right mr-2"></i> Reset checklist
+                </button>
+            </div>
+        </div>
+
+        <!-- PROFILE MODAL -->
+        <div onclick="if(event.target.id==='profile-modal')hideProfile()" id="profile-modal" class="hidden fixed inset-0 bg-black/60 z-[9999] flex items-center justify-center">
+            <div onclick="event.stopImmediatePropagation()" class="bg-white rounded-3xl max-w-lg w-full mx-4 p-8">
+                <h2 class="text-2xl font-semibold mb-8">Account Settings</h2>
+                <div class="flex flex-col gap-y-8">
+                    <div class="flex gap-x-6">
+                        <img src="https://picsum.photos/id/64/128/128" class="w-20 h-20 rounded-3xl">
+                        <div class="flex-1">
+                            <input type="text" value="Alex Rivera" class="w-full border rounded-3xl px-5 py-4 mb-3">
+                            <input type="email" value="demo@traveloop.com" class="w-full border rounded-3xl px-5 py-4">
+                        </div>
+                    </div>
+                    <button onclick="hideProfile()" class="w-full py-4 rounded-3xl border-2 border-teal-300 text-teal-600 font-semibold">Save changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CONGRATULATIONS MODAL -->
+    <div onclick="if(event.target.id==='congrats-modal')hideCongrats()" id="congrats-modal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-[10000]">
+        <div class="bg-white rounded-3xl text-center px-10 py-12 max-w-md w-full relative overflow-hidden">
+            <div id="confetti-container" class="absolute inset-0 pointer-events-none"></div>
+            <i class="fa-solid fa-party-horn text-7xl text-teal-400 mb-4"></i>
+            <h2 class="text-4xl font-semibold logo-font mb-2">Congratulations, Alex!</h2>
+            <p class="text-2xl text-teal-600">You are now part of the Traveloop family 🎉</p>
+            <p class="mt-6 text-slate-600">Your first trip is waiting to be planned. Let's make it epic!</p>
+            <button onclick="hideCongrats()" class="mt-10 px-12 py-5 bg-teal-500 text-white text-xl rounded-3xl font-semibold">Start planning my first trip</button>
+        </div>
+    </div>
+
+    <script>
+        let cities = [
+            { id: 1, name: "Paris", country: "France", img: "https://picsum.photos/id/1015/600/400" },
+            { id: 2, name: "Tokyo", country: "Japan", img: "https://picsum.photos/id/1005/600/400" },
+            { id: 3, name: "New York", country: "USA", img: "https://picsum.photos/id/201/600/400" },
+            { id: 4, name: "Bali", country: "Indonesia", img: "https://picsum.photos/id/1009/600/400" },
+            { id: 5, name: "Rome", country: "Italy", img: "https://picsum.photos/id/1016/600/400" },
+            { id: 6, name: "Santorini", country: "Greece", img: "https://picsum.photos/id/1006/600/400" },
+            { id: 7, name: "Cape Town", country: "South Africa", img: "https://picsum.photos/id/133/600/400" },
+            { id: 8, name: "Marrakech", country: "Morocco", img: "https://picsum.photos/id/1018/600/400" }
+        ];
+        let sampleTrips = [
+            { id: 1, name: "Italy Grand Tour", dates: "May 22 – Jun 4", stops: 4, totalCost: 4872, image: "https://picsum.photos/id/1016/600/400", description: "Rome → Florence → Venice" },
+            { id: 2, name: "Bali Bliss Escape", dates: "Jun 10 – 20", stops: 3, totalCost: 2140, image: "https://picsum.photos/id/1009/600/400", description: "Ubud → Seminyak" }
+        ];
+        let currentItinerary = [
+            { day: 1, city: "Rome", activities: ["Colosseum visit", "Trevi Fountain"], cost: 420 },
+            { day: 2, city: "Florence", activities: ["Duomo climb", "Ponte Vecchio"], cost: 310 },
+            { day: 3, city: "Venice", activities: ["Gondola ride", "St. Mark's Square"], cost: 480 }
+        ];
+        let packingItems = [
+            { id: 1, text: "Passport & travel documents", checked: true, category: "Documents" },
+            { id: 2, text: "Power adapter (EU plug)", checked: false, category: "Electronics" },
+            { id: 3, text: "Light walking shoes", checked: false, category: "Clothing" },
+            { id: 4, text: "Sunscreen SPF50", checked: true, category: "Toiletries" }
+        ];
+
+        // Trip-wise budget data (in ₹)
+        let budgetTrips = [
+            {
+                id: 1,
+                name: "Bali Bliss Escape",
+                total: 52000,
+                breakdown: {
+                    "Flights & Transport": 18000,
+                    "Stay": 15000,
+                    "Activities": 8000,
+                    "Local Travel": 4000,
+                    "Shopping": 3000,
+                    "Food & Other": 4000
+                }
+            },
+            {
+                id: 2,
+                name: "Italy Grand Tour",
+                total: 320000,
+                breakdown: {
+                    "Flights & Transport": 110000,
+                    "Stay": 95000,
+                    "Activities": 55000,
+                    "Local Travel": 25000,
+                    "Shopping": 20000,
+                    "Food & Other": 20000
+                }
+            },
+            {
+                id: 3,
+                name: "Paris Romantic Getaway",
+                total: 185000,
+                breakdown: {
+                    "Flights & Transport": 65000,
+                    "Stay": 55000,
+                    "Activities": 28000,
+                    "Local Travel": 12000,
+                    "Shopping": 15000,
+                    "Food & Other": 10000
+                }
+            }
+        ];
+
+        let currentBudgetIndex = 0;
+        let myChart = null;
+
+        function launchConfetti() {
+            const container = document.getElementById('confetti-container');
+            container.innerHTML = '';
+            for (let i = 0; i < 150; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + '%';
+                confetti.style.backgroundColor = ['#14b8a6', '#f59e0b', '#ec4899'][Math.floor(Math.random()*3)];
+                confetti.style.animationDuration = (Math.random() * 3 + 2.5) + 's';
+                container.appendChild(confetti);
+                setTimeout(() => confetti.remove(), 6000);
+            }
+        }
+
+        function performLogin() {
+            const email = document.getElementById('login-email').value;
+            document.getElementById('user-name-display').innerHTML = email.split('@')[0].charAt(0).toUpperCase() + email.split('@')[0].slice(1);
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('main-app').classList.remove('hidden');
+            document.getElementById('navbar').classList.remove('hidden');
+            const congrats = document.getElementById('congrats-modal');
+            congrats.style.display = 'flex';
+            launchConfetti();
+            renderDashboard();
+        }
+
+        function performSignup() { performLogin(); }
+
+        function hideCongrats() {
+            document.getElementById('congrats-modal').style.display = 'none';
+            navigateTo('dashboard');
+        }
+
+        function logout() { location.reload(); }
+
+        function navigateTo(screen) {
+            document.querySelectorAll('#main-app > div[id^="screen-"]').forEach(s => s.classList.add('hidden'));
+            const target = document.getElementById('screen-' + screen);
+            if (target) target.classList.remove('hidden');
+            if (screen === 'dashboard') renderDashboard();
+            if (screen === 'my-trips') renderMyTrips();
+            if (screen === 'itinerary') renderItinerary();
+            if (screen === 'budget') loadBudgetScreen();
+            if (screen === 'packing') renderPacking();
+        }
+
+        function renderDashboard(filteredCities = cities) {
+            const popularHTML = filteredCities.map(city => `
+                <div onclick="addCityToCurrentTrip(${city.id})" class="card-hover bg-white rounded-3xl overflow-hidden cursor-pointer">
+                    <img src="${city.img}" class="w-full h-36 object-cover">
+                    <div class="p-4"><span class="font-semibold">${city.name}</span><p class="text-xs text-slate-500">${city.country}</p></div>
+                </div>
+            `).join('');
+            document.getElementById('popular-grid').innerHTML = popularHTML;
+            const upcomingHTML = sampleTrips.map(trip => `
+                <div onclick="loadTrip(${trip.id})" class="card-hover bg-white rounded-3xl p-6 cursor-pointer flex gap-4">
+                    <img src="${trip.image}" class="w-28 h-28 object-cover rounded-2xl">
+                    <div class="flex-1"><h4 class="font-semibold text-lg">${trip.name}</h4><p class="text-teal-500">${trip.dates}</p><p class="text-sm text-slate-500 mt-1">${trip.description}</p><div class="mt-4 flex justify-between text-xs"><span>${trip.stops} stops</span><span class="font-semibold">$${trip.totalCost}</span></div></div>
+                </div>
+            `).join('');
+            document.getElementById('upcoming-trips').innerHTML = upcomingHTML;
+        }
+
+        function liveSearch() {
+            const term = document.getElementById('global-search').value.toLowerCase().trim();
+            if (!term) { renderDashboard(cities); return; }
+            const filtered = cities.filter(c => 
+                c.name.toLowerCase().includes(term) || c.country.toLowerCase().includes(term)
+            );
+            renderDashboard(filtered);
+        }
+
+        function performSearch() {
+            const term = document.getElementById('global-search').value.trim();
+            if (!term) return;
+            const filtered = cities.filter(c => 
+                c.name.toLowerCase().includes(term.toLowerCase()) || c.country.toLowerCase().includes(term.toLowerCase())
+            );
+            if (filtered.length > 0) {
+                navigateTo('dashboard');
+                renderDashboard(filtered);
+            } else {
+                alert("No matching destinations found. Try another search!");
+            }
+        }
+
+        function addCityToCurrentTrip(cityId) {
+            const city = cities.find(c => c.id === cityId);
+            if (city) { 
+                alert(`✅ ${city.name} added to your current itinerary!`); 
+                navigateTo('itinerary'); 
+            }
+        }
+
+        function renderMyTrips() {
+            const html = sampleTrips.map(trip => `
+                <div onclick="loadTrip(${trip.id})" class="card-hover bg-white rounded-3xl p-6 cursor-pointer">
+                    <img src="${trip.image}" class="w-full h-40 object-cover rounded-2xl mb-4">
+                    <h3 class="font-semibold text-xl">${trip.name}</h3>
+                    <p class="text-teal-500">${trip.dates}</p>
+                    <div class="flex justify-between mt-6 text-sm"><div><i class="fa-solid fa-map-marker-alt"></i> ${trip.stops} stops</div><div class="font-semibold">$${trip.totalCost}</div></div>
+                </div>
+            `).join('');
+            document.getElementById('my-trips-list').innerHTML = html;
+        }
+
+        function loadTrip(id) { navigateTo('itinerary'); renderItinerary(); }
+
+        function renderItinerary() {
+            const container = document.getElementById('itinerary-timeline');
+            container.innerHTML = currentItinerary.map((stop) => `
+                <div class="flex gap-6">
+                    <div class="text-center w-12 pt-2"><div class="text-xs bg-slate-100 text-teal-600 font-mono rounded-3xl w-12 h-12 flex items-center justify-center mx-auto">DAY ${stop.day}</div></div>
+                    <div class="flex-1 bg-white rounded-3xl p-6 card-hover">
+                        <div class="flex justify-between"><h4 class="text-2xl font-semibold">${stop.city}</h4><span class="text-teal-500 font-mono">$${stop.cost}</span></div>
+                        <ul class="mt-4 space-y-2">${stop.activities.map(act => `<li class="flex items-center"><i class="fa-solid fa-circle-check text-teal-400 mr-2"></i> ${act}</li>`).join('')}</ul>
+                    </div>
+                </div>
+            `).join('');
+            document.getElementById('current-trip-name').textContent = "Italy Grand Tour • 14 days";
+            document.getElementById('current-trip-dates').textContent = "May 22 – June 4, 2026 • 4 travelers";
+        }
+
+        function addStopToItinerary() {
+            const newDay = currentItinerary.length + 1;
+            currentItinerary.push({ day: newDay, city: "New destination", activities: ["Custom activity"], cost: Math.floor(Math.random() * 400) + 200 });
+            renderItinerary();
+        }
+
+        function saveItinerary() { alert("✅ Itinerary saved and public link copied to clipboard!"); }
+
+        // Load budget screen with dropdown
+        function loadBudgetScreen() {
+            const select = document.getElementById('budget-trip-select');
+            select.innerHTML = budgetTrips.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+            currentBudgetIndex = 0;
+            loadBudgetData();
+        }
+
+        function loadBudgetData() {
+            const select = document.getElementById('budget-trip-select');
+            const selectedId = parseInt(select.value);
+            const trip = budgetTrips.find(t => t.id === selectedId) || budgetTrips[0];
+            
+            // Update title
+            document.getElementById('budget-trip-title').innerHTML = `
+                ${trip.name} • Total: <span id="budget-total" class="font-semibold">₹${trip.total.toLocaleString('en-IN')}</span>
+            `;
+
+            // Render breakdown bars
+            let breakdownHTML = '';
+            Object.keys(trip.breakdown).forEach(key => {
+                const value = trip.breakdown[key];
+                const percent = Math.round((value / trip.total) * 100);
+                breakdownHTML += `
+                    <div class="bg-white rounded-3xl p-6">
+                        <div class="flex justify-between text-sm mb-2">
+                            <span class="font-medium">${key}</span>
+                            <span class="font-semibold">₹${value.toLocaleString('en-IN')}</span>
+                        </div>
+                        <div class="h-2 bg-teal-100 rounded-full">
+                            <div class="h-2 bg-teal-500 rounded-full" style="width: ${percent}%"></div>
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById('budget-breakdown').innerHTML = breakdownHTML;
+
+            // Update pie chart
+            const ctx = document.getElementById('budgetChart');
+            if (myChart) myChart.destroy();
+            
+            myChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(trip.breakdown),
+                    datasets: [{
+                        data: Object.values(trip.breakdown),
+                        backgroundColor: ['#14b8a6', '#0ea5e9', '#8b5cf6', '#f59e0b', '#ec4899', '#a3e4d7'],
+                        borderColor: '#fff',
+                        borderWidth: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { padding: 20, font: { size: 14 } } }
+                    }
+                }
+            });
+        }
+
+        function renderPacking() {
+            const container = document.getElementById('packing-list');
+            container.innerHTML = packingItems.map(item => `
+                <div class="flex items-center justify-between border-b pb-4">
+                    <div class="flex items-center"><input type="checkbox" ${item.checked ? 'checked' : ''} onclick="togglePacked(${item.id})" class="w-5 h-5 accent-teal-500 mr-4"><span class="font-medium">${item.text}</span></div>
+                    <span class="text-xs uppercase bg-slate-100 px-4 py-px rounded-3xl">${item.category}</span>
+                </div>
+            `).join('');
+        }
+
+        function togglePacked(id) {
+            const item = packingItems.find(i => i.id === id);
+            if (item) item.checked = !item.checked;
+        }
+
+        function resetChecklist() { packingItems.forEach(i => i.checked = false); renderPacking(); }
+
+        function showProfile() { 
+            document.getElementById('profile-modal').classList.remove('hidden'); 
+            document.getElementById('profile-modal').style.display = 'flex'; 
+        }
+        function hideProfile() { 
+            const modal = document.getElementById('profile-modal'); 
+            modal.style.display = 'none'; 
+            modal.classList.add('hidden'); 
+        }
+
+        function switchAuthTab(n) {
+            document.getElementById('login-form').classList.toggle('hidden', n === 1);
+            document.getElementById('signup-form').classList.toggle('hidden', n === 0);
+            document.getElementById('tab-login').dataset.active = n === 0;
+            document.getElementById('tab-signup').dataset.active = n === 1;
+        }
+
+        function createNewTrip() {
+            navigateTo('itinerary');
+            currentItinerary = [];
+            renderItinerary();
+        }
+
+        window.onload = function() {
+            console.log('%c🚀 Traveloop frontend ready! Budget now in ₹ with trip-wise dropdown (max 3 trips)', 'background:#14b8a6;color:white;padding:2px 6px;border-radius:4px;font-size:13px');
+        };
+    </script>
+</body>
+</html>
